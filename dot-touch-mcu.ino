@@ -14,12 +14,25 @@
 
 */
 
-#include <ESP8266WiFi.h>
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>// Usado para ESP8266
+  #include <ESP8266HTTPClient.h>
+  #define BUTTON D3// NodeMCU ESP8266 Flash Button
+  #define LOW_STATE HIGH
+  #define HIGH_STATE LOW
+  const int ESP8266 = 1;
+#elif defined(ESP32)
+  #include <WiFi.h>
+  #include <HTTPClient.h>
+  #define BUTTON 23// ESP32 0: corresponde ao botão BOOT, 23 é o pino usado pelo projeto Dot
+  #define LOW_STATE LOW
+  #define HIGH_STATE HIGH
+  const int ESP8266 = 0;
+#endif
 #include <WiFiClient.h>
-#include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
-#define BUTTON D3// NodeMCU Flash Button
+
 
 const char* ssid = "AP-DIRETORIA";      // SSID da rede WiFi
 const char* password = "dt@44550965092";  // Senha da rede WiFi
@@ -30,7 +43,7 @@ const int ledPin = LED_BUILTIN;  // Pino GPIO conectado ao LED do módulo ESP826
 const char* session = "";
 unsigned long interval = 1000;  // Intervalo de piscar do LED (1 segundo)
 unsigned long previousMillis = 0;
-bool ledState = HIGH;  // Estado inicial do LED
+bool ledState = LOW_STATE;  // Estado inicial do LED
 
 WiFiClient wifiClient;
 HTTPClient http;
@@ -49,14 +62,14 @@ void setup() {
   WiFi.begin(ssid, password);  // Inicia a conexão com o WiFi
   
   while (WiFi.status() != WL_CONNECTED) {  // Aguarda a conexão ser estabelecida
-    digitalWrite(ledPin, LOW);  // Liga o LED
+    digitalWrite(ledPin, HIGH_STATE);  // Liga o LED
     delay(200); // Espera por 0,2 segundo
     Serial.print(".");
-    digitalWrite(ledPin, HIGH);   // Desliga o LED
+    digitalWrite(ledPin, LOW_STATE);   // Desliga o LED
     delay(200); // Espera por 0,2 segundo
   }
 
-  digitalWrite(ledPin, LOW);  // Liga o LED para indicar que foi conectado a rede WIFI
+  digitalWrite(ledPin, HIGH_STATE);  // Liga o LED para indicar que foi conectado a rede WIFI
   // Conexão bem-sucedida
   Serial.println("");
   Serial.println("Conectado à rede WiFi! ");
@@ -85,7 +98,7 @@ void blinkLed(){
 
     // Inverte o estado do LED
     ledState = !ledState;
-    if(!ledState){
+    if( ESP8266 && !ledState || ledState ){
       interval = 50;
     } else{
       interval = 2000;
@@ -100,7 +113,7 @@ void blinkLed(){
 }
 
 void checkButton(){
-  if(digitalRead(BUTTON) == LOW){
+  if(digitalRead(BUTTON) == HIGH_STATE){
     digitalWrite(ledPin, !digitalRead(ledPin));//Inverte o estado do led
     Serial.println("Botão Pressionado");
     //Serial.print("Retorno botão autenticação: " + autentica());
